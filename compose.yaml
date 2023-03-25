@@ -1,0 +1,40 @@
+# The two containers are the test database and the api-server
+# Credentials for the Database are shared via mounting the same file
+# into both docker containers and configuring both the api-server and the
+# database to use the information in those files as database user/password
+
+services:
+  hgcal-test-db:
+    image: posgresql:latest
+    restart: always
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_USER_FILE=/run/secrets/db_user
+      - POSTGRES_DB=hgcal-dev-db
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_passwd
+    volumes:
+      - type: bind
+        source: /opt/hgcal-test-db/db-data
+        target: /var/lib/postgresql/data/
+      - type: bind
+        source: /opt/hgcal-test-db/db_passwd
+        target: /run/secrets/db_passwd
+      - type: bind
+        source: /opt/hgcal-test-db/db_user
+        target: /run/secrets/db_user
+    port:
+      - 5432:5432
+
+  hgcal-web-api:
+    image: build .
+    environments:
+      - DB_USER_FILE=/run/secrets/db_user
+      - DB_PW_FILE=/run/secrets/db_password
+      - API_CONFIG_FILE=
+    volumes:
+      - type: bind
+        source: /opt/hgcal-test-db/db_user
+        target: /run/secrets/db_user
+      - type: bind
+        source: /opt/hgcal-test-db/db_passwd
+        target: /run/secrets/db_passwd
